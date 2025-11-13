@@ -45,3 +45,105 @@ Resume for Siwon Moon
 
 
 ## 몬스터 asset 스크립트
+
+```csharp
+using UnityEngine;
+using UnityEngine.AI;
+using System.Collections;
+
+public class MonsterControl : MonoBehaviour
+{
+    private bool isStunned = false;
+    private NavMeshAgent navMeshAgent;
+    private MazeTracker mazeTracker; // Creep 에셋에 부착된 스크립트
+
+    void Start()
+    {
+        navMeshAgent = GetComponent<NavMeshAgent>();
+        mazeTracker = GetComponent<MazeTracker>(); // MazeTracker 스크립트 가져오기
+
+        if (navMeshAgent == null) Debug.LogError("Nav Mesh Agent 컴포넌트가 없습니다.");
+        if (mazeTracker == null) Debug.LogError("MazeTracker 스크립트가 없습니다.");
+    }
+
+    // 손전등이 호출하는 무력화 시작 함수
+    public void StunStart()
+    {
+        // 이미 무력화 상태면 아무것도 하지 않음
+        if (isStunned) return;
+
+        isStunned = true;
+        
+        // 1. Maze Tracker 스크립트 비활성화 (추적 로직 정지)
+        if (mazeTracker != null)
+        {
+            mazeTracker.enabled = false;
+        }
+
+        // 2. Nav Mesh Agent 이동 정지
+        if (navMeshAgent != null)
+        {
+            navMeshAgent.isStopped = true; // 이동 명령 정지
+        }
+        
+        // 시각적 피드백 (선택 사항)
+        Renderer renderer = GetComponentInChildren<Renderer>();
+        if (renderer != null) renderer.material.color = Color.blue;
+    }
+
+    // 손전등이 호출하는 무력화 해제 함수
+    public void StunEnd()
+    {
+        // 무력화 상태가 아니면 아무것도 하지 않음
+        if (!isStunned) return;
+
+        isStunned = false;
+        
+        // 1. Nav Mesh Agent 이동 재개
+        if (navMeshAgent != null)
+        {
+            navMeshAgent.isStopped = false; // 이동 명령 재개
+        }
+
+        // 2. Maze Tracker 스크립트 활성화 (추적 로직 재개)
+        if (mazeTracker != null)
+        {
+            mazeTracker.enabled = true;
+        }
+        
+        // 원래 색상/상태로 되돌립니다.
+        Renderer renderer = GetComponentInChildren<Renderer>();
+        if (renderer != null) renderer.material.color = Color.white;
+
+    }
+}
+```
+
+### 2. 지역 아마추어 농구 리그 관리 시스템 (2025. 3학년 1학기)
+> '데이터베이스' 수업에서 A+를 목표로 진행한 **데이터베이스 설계 및 구축 프로젝트**입니다.
+>  지역 농구 리그의 팀, 선수, 경기 일정, 그리고 선수별 상세 통계(득점, 리바운드 등)를 체계적으로 관리하는 시스템을 목표로 했습니다.
+
+* **사용 기술:** `SQL (MySQL)`
+* **주요 역할 및 경험:**
+    * **요구사항 분석:** 관리 시스템이 제공할 서비스(선수 등록, 통계 조회 등)를 정의 
+    * **데이터베이스 설계:** ER 다이어그램을 작성하여 4개의 핵심 테이블(Team, Player, Game, Game_Stats)과 관계를 설계 
+    * **스키마 구축:** `CREATE TABLE`을 사용하여 실제 DB 스키마를 구현
+    * **데이터 활용:** `JOIN`, `GROUP BY`, `AVG`, `SUM` 등을 활용한 3가지 시나리오별(선수 랭킹, 팀 평균, 누적 통계) `SELECT` 쿼리 작성 
+
+ DB 설계(ERD) 및 핵심 SQL 쿼리 보기 
+  
+  #### 1. 데이터베이스  (ERD)
+* **데이터베이스 보고서:** **[데이터베이스 보고서](./데이터베이스_.pdf)** ```
+
+
+  #### 2. 핵심 활용 쿼리 (시나리오 3: 선수별 누적 통계)]
+  ```sql
+  -- 선수별 누적 득점, 어시스트, 리바운드 통계를 조회합니다.
+  SELECT P.player_name, T.team_name,
+      SUM(GS.points) AS total_points,
+      SUM(GS.assists) AS total_assists,
+      SUM(GS.rebounds) AS total_rebounds
+  FROM Game_Stats GS
+  JOIN Player P ON GS.player_id = P.player_id
+  JOIN Team T ON P.team_id = T.team_id
+  GROUP BY P.player_id, P.player_name, T.team_name;
